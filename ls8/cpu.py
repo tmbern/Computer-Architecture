@@ -7,7 +7,10 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.pc = 0
+
 
     def load(self):
         """Load a program into memory."""
@@ -40,6 +43,12 @@ class CPU:
         else:
             raise Exception("Unsupported ALU operation")
 
+    def ram_read(self, address):
+        return self.ram[address]
+
+    def ram_write(self, address, value):
+        self.ram[address] = value
+
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -62,4 +71,32 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+
+        HLT = 0b00000001
+        LDI = 0b10000010
+        PRN = 0b01000111
+
+        running = True
+        while running:
+            instruction = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
+
+            if instruction == HLT:
+                # When HLT set run to False to exit the loop
+                running = False
+                self.pc += 1
+
+            elif instruction == LDI:
+                # sets a register to a specific value. This requires the next two bytes of 
+                # data. So we need to increment the PC counter by 3
+                self.reg[operand_a] = operand_b
+                self.pc +=3
+            
+            elif instruction == PRN:
+                print(self.reg[operand_a])
+                self.pc += 2
+            
+            else:
+                print(f'{instruction} not found at address {self.pc}')
+                sys.exit(1)
