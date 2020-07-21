@@ -19,20 +19,28 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        # for instruction in program:
+        #     self.ram[address] = instruction
+        #     address += 1
 
+        with open(sys.argv[1]) as f:
+            for line in f:
+                value = line.split("#")[0].strip()
+                if value == '':
+                    continue
+                value = int(value, 2)
+                self.ram[address] = value
+                address +=1
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -75,6 +83,7 @@ class CPU:
         HLT = 0b00000001
         LDI = 0b10000010
         PRN = 0b01000111
+        MUL = 0b10100010
 
         running = True
         while running:
@@ -97,6 +106,12 @@ class CPU:
                 print(self.reg[operand_a])
                 self.pc += 2
             
+            elif instruction == MUL:
+                # multipy the values in two registers together and store result in registerA
+                result = self.reg[operand_a] * self.reg[operand_b]
+                self.reg[operand_a] = result
+                self.pc +=3
+
             else:
                 print(f'{instruction} not found at address {self.pc}')
                 sys.exit(1)
