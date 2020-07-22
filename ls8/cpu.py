@@ -2,6 +2,8 @@
 
 import sys
 
+
+
 class CPU:
     """Main CPU class."""
 
@@ -10,6 +12,12 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+
+        # the spec indicates that the register 7 is reserved for the stack pointer
+        self.reg[7] = 0XF4
+        # the stack pointer should start out at register 7. this will be 
+        # incremented or decremented as we pop and push. 
+        self.sp = self.reg[7]
 
 
     def load(self):
@@ -84,6 +92,9 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         MUL = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
+
 
         running = True
         while running:
@@ -112,6 +123,23 @@ class CPU:
                 self.reg[operand_a] = result
                 self.pc +=3
 
+            elif instruction == PUSH:
+                # Push the value in the given register on the stack.
+                # 1. Decrement the `SP`.
+                # 2. Copy the value in the given register to the address pointed to by `SP`.
+                self.sp -= 1
+                value = self.reg[operand_a]
+                self.ram[self.sp] = value
+                self.pc +=2
+
+            elif instruction == POP:
+                # Pop the value at the top of the stack into the given register.
+                # 1. Copy the value from the address pointed to by `SP` to the given register.
+                # 2. Increment `SP`.
+                value = self.ram[self.sp]
+                self.reg[operand_a] = value
+                self.sp += 1
+                self.pc += 2
             else:
                 print(f'{instruction} not found at address {self.pc}')
                 sys.exit(1)
