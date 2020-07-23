@@ -1,8 +1,18 @@
 """CPU functionality."""
 
 import sys
-
-
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
+ADD = 0b10100000
+SUB = 0b10100001
+DIV = 0b10100011
+SP = 7
 
 class CPU:
     """Main CPU class."""
@@ -14,11 +24,12 @@ class CPU:
         self.pc = 0
 
         # the spec indicates that the register 7 is reserved for the stack pointer
-        self.reg[7] = 0XF4
+        # self.reg[7] = 0XF4
         # the stack pointer should start out at register 7. this will be 
         # incremented or decremented as we pop and push. 
-        self.sp = self.reg[7]
-
+        # self.sp = self.reg[7]
+        
+        self.reg[SP] = 0XF4
 
     def load(self):
         """Load a program into memory."""
@@ -55,7 +66,12 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "DIV":
+            self.reg[reg_a] /= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -88,12 +104,6 @@ class CPU:
     def run(self):
         """Run the CPU."""
 
-        HLT = 0b00000001
-        LDI = 0b10000010
-        PRN = 0b01000111
-        MUL = 0b10100010
-        PUSH = 0b01000101
-        POP = 0b01000110
 
 
         running = True
@@ -102,6 +112,7 @@ class CPU:
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
 
+                       
             if instruction == HLT:
                 # When HLT set run to False to exit the loop
                 running = False
@@ -127,19 +138,41 @@ class CPU:
                 # Push the value in the given register on the stack.
                 # 1. Decrement the `SP`.
                 # 2. Copy the value in the given register to the address pointed to by `SP`.
-                self.sp -= 1
+                self.reg[SP] -= 1
                 value = self.reg[operand_a]
-                self.ram[self.sp] = value
+                self.ram[self.reg[SP]] = value
                 self.pc +=2
 
             elif instruction == POP:
                 # Pop the value at the top of the stack into the given register.
                 # 1. Copy the value from the address pointed to by `SP` to the given register.
                 # 2. Increment `SP`.
-                value = self.ram[self.sp]
+                value = self.ram[self.reg[SP]]
                 self.reg[operand_a] = value
-                self.sp += 1
+                self.reg[SP] += 1
                 self.pc += 2
+
+            elif instruction == CALL:
+                # Calls a subroutine (function) at the address stored in the register.
+                # 1. The address of the ***instruction*** _directly after_ `CALL` is
+                # pushed onto the stack. This allows us to return to where we left off when the subroutine finishes executing.
+                # 2. The PC is set to the address stored in the given register. We jump to that location in RAM and execute the 
+                # first instruction in the subroutine. The PC can move forward or backwards from its current location.
+                
+                self.reg[SP] -= 1
+                self.ram[self.reg[SP]] = self.pc + 2
+                self.pc = self.reg[operand_a]
+
+            elif instruction == RET:
+                # Return from subroutine.
+                # Pop the value from the top of the stack and store it in the `PC`.
+                self.pc = self.ram[self.reg[SP]]
+                self.reg[SP] += 1
+
+            elif instruction == ADD:
+                self.alu("ADD", operand_a, operand_b)
+                self.pc += 3
+
             else:
                 print(f'{instruction} not found at address {self.pc}')
                 sys.exit(1)

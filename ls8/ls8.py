@@ -4,8 +4,10 @@
 
 import sys
 from cpu import *
+# from josh import *
 
 cpu = CPU()
 
+# cpu.load('ls8/examples/call.ls8')
 cpu.load()
 cpu.run()
